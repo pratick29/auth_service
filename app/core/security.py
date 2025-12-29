@@ -1,3 +1,5 @@
+import secrets
+
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -80,3 +82,5 @@ def require_admin(current_user: User = Depends(get_current_user)):
         )
     return current_user
 
+def create_refresh_token():
+    return secrets.token_urlsafe(64)

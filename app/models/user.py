@@ -11,3 +11,4 @@ class User(Base):
     role = Column(String, default="user")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    refresh_token = Column(String, nullable=True)

@@ -33,7 +33,12 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
     return user
 
-from app.core.security import verify_password, create_access_token
+from app.core.security import (
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+)
+
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import Depends
 
@@ -53,9 +58,14 @@ def login_user(
     token_data = {"sub": str(user.id)}
     access_token = create_access_token(data=token_data)
 
+    refresh_token = create_refresh_token()
+    user.refresh_token = refresh_token
+    db.commit()
+
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+    "access_token": access_token,
+    "refresh_token": refresh_token,
+    "token_type": "bearer",
     }
 
 @router.get("/me", response_model=UserResponse)
@@ -71,3 +81,25 @@ def get_all_users(
     _: User = Depends(require_admin),
 ):
     return db.query(User).all()
+
+@router.post("/refresh", response_model=Token)
+def refresh_access_token(
+    refresh_token: str,
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.refresh_token == refresh_token).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    token_data = {"sub": str(user.id)}
+    access_token = create_access_token(data=token_data)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": user.refresh_token,
+        "token_type": "bearer",
+    }
