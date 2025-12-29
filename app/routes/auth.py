@@ -11,7 +11,11 @@ from app.core.security import hash_password
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     # check if user already exists
     existing_user = db.query(User).filter(User.email == user_in.email).first()
@@ -19,6 +23,13 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
+        )
+
+    # password policy
+    if len(user_in.password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters",
         )
 
     # create user
@@ -32,6 +43,7 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
 
     return user
+
 
 from app.core.security import (
     verify_password,
